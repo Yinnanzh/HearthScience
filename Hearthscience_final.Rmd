@@ -469,8 +469,6 @@ g1 = minions_text %>% mutate(attplusheal = attack+health) %>%
 
 ```
 
-We can see from the above graph that higher attplusheal value (attack+health) is associated with higher mean cost. 
-
 In Hearthstone, the cost of cards is usually categorized into 0 ~ 6 and 7+. Here, we wrangled the card costs into these 8 categories and also separate them by cardSet:
 
 ```{r, fig.width= 8}
@@ -489,6 +487,7 @@ grid.arrange(g1,g2, ncol = 2)
 minions_text %>% ggplot(aes(cost1, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 20 , position='dodge')
 ```
 
+We can see from the above graphs that higher attplusheal value (attack+health) is associated with higher mean cost. 
 
 ```{r, warning=F, error=F, fig.height=8}
 ## by attack, cost, health:
