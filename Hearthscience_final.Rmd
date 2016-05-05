@@ -483,18 +483,22 @@ g2 = minions_text %>% mutate(attplusheal = attack+health) %>%
 
 grid.arrange(g1,g2, ncol = 2)
 
-## by cardSet:
-minions_text %>% ggplot(aes(cost1, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 20 , position='dodge')
 ```
 
 We can see from the above graphs that higher attplusheal value (attack+health) is associated with higher mean cost. 
 
-```{r, warning=F, error=F, fig.height=8}
+```{r, fig.width= 8}
+## by cardSet:
+minions_text %>% ggplot(aes(cost1, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 20 , position='dodge')
+
 ## by attack, cost, health:
 minions_bars = minions_text %>% gather(key, value, cost, attack, health)
 minions_bars %>% ggplot(aes(value, group = key, fill = key)) + stat_bin(aes(y = ..count..), bins = 40, position='dodge')
 
+```
 
+
+```{r, warning=F, error=F, fig.height=8}
 ## by cardSet:
 ## Cost:
 g1 = minions_text %>% ggplot(aes(cost, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 40 , position='dodge')
@@ -886,6 +890,11 @@ for(i in 1:9){
   decks[[i]]<-heroDeckLists[[i]]%>%gather(deckId,cardCounts,2:(length(heroDeckLists[[i]])-1))
 }
 
+```
+
+__Deck Distributions:__
+
+```{r,warning=F,error=F}
 ###warlock deck
 warlockDeckCost<-decks[[8]]%>%filter(cardCounts!=0)%>%
   left_join(cards,by=c("cardNames"="name"))%>%
@@ -895,8 +904,8 @@ warlockDeckCost<-decks[[8]]%>%filter(cardCounts!=0)%>%
   mutate(aveCost=mean(cardTotalCost))%>%
   ungroup()
 
-warlockDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
-  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Warlock deck distribution")
+a = warlockDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
+  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Warlock")
 
 ###paladin deck
 paladinDeckCost<-decks[[4]]%>%filter(cardCounts!=0)%>%
@@ -907,8 +916,8 @@ paladinDeckCost<-decks[[4]]%>%filter(cardCounts!=0)%>%
   mutate(aveCost=mean(cardTotalCost))%>%
   ungroup()
 
-paladinDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
-  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Paladin deck distribution")
+b = paladinDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
+  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Paladin")
 
 
 ###druid deck
@@ -920,8 +929,8 @@ druidDeckCost<-decks[[1]]%>%filter(cardCounts!=0)%>%
   mutate(aveCost=mean(cardTotalCost))%>%
   ungroup()
 
-druidDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
-  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Druid deck distribution")
+c = druidDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
+  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Druid")
 
 
 ###hunter deck
@@ -933,8 +942,8 @@ hunterDeckCost<-decks[[2]]%>%filter(cardCounts!=0)%>%
   mutate(aveCost=mean(cardTotalCost))%>%
   ungroup()
 
-hunterDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
-  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Hunter deck distribution")
+d = hunterDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
+  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Hunter")
 
 ###Mage deck
 mageDeckCost<-decks[[3]]%>%filter(cardCounts!=0)%>%
@@ -945,8 +954,8 @@ mageDeckCost<-decks[[3]]%>%filter(cardCounts!=0)%>%
   mutate(aveCost=mean(cardTotalCost))%>%
   ungroup()
 
-mageDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
-  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Mage deck distribution")
+e = mageDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
+  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Mage")
 
 ###Priest deck
 priestDeckCost<-decks[[5]]%>%filter(cardCounts!=0)%>%
@@ -957,8 +966,8 @@ priestDeckCost<-decks[[5]]%>%filter(cardCounts!=0)%>%
   mutate(aveCost=mean(cardTotalCost))%>%
   ungroup()
 
-priestDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
-  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Priest deck distribution")
+f = priestDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
+  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Priest")
 
 ##Rogue deck
 rogueDeckCost<-decks[[6]]%>%filter(cardCounts!=0)%>%
@@ -969,8 +978,8 @@ rogueDeckCost<-decks[[6]]%>%filter(cardCounts!=0)%>%
   mutate(aveCost=mean(cardTotalCost))%>%
   ungroup()
 
-rogueDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
-  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Rogue deck distribution")
+g = rogueDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
+  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Rogue")
 
 ###Shaman
 shamanDeckCost<-decks[[7]]%>%filter(cardCounts!=0)%>%
@@ -981,8 +990,8 @@ shamanDeckCost<-decks[[7]]%>%filter(cardCounts!=0)%>%
   mutate(aveCost=mean(cardTotalCost))%>%
   ungroup()
 
-shamanDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
-  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Shaman deck distribution")
+h = shamanDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
+  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Shaman")
 
 ###Warrior deck
 warriorDeckCost<-decks[[9]]%>%filter(cardCounts!=0)%>%
@@ -993,12 +1002,12 @@ warriorDeckCost<-decks[[9]]%>%filter(cardCounts!=0)%>%
   mutate(aveCost=mean(cardTotalCost))%>%
   ungroup()
 
-warriorDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
-  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Warrior deck distribution")
+i = warriorDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
+  ggplot(aes(x=aveCost))+geom_histogram(binwidth = 0.5)+ggtitle("Warrior")
 
-
-
+grid.arrange(a, b, c, d, e, f, g, h, i, ncol = 3)
 ```
+
 
 From the histogram we can see warlock is quite different from other heros, the distribution of the costs of decks has double peaks, while others are more likely following a normal distribution. This finding suggests that the warlock card may be ideal to look at as it is likely to have both slow-tempo and fast-tempo mode to play, and may have distinctive features and combinations for certain cards.
 
