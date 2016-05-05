@@ -1,7 +1,7 @@
 ---
 title: "Hearthscience"
 author: "Chi-Hsuan Chang, Yinnan Zheng, Ji Hua, Xue Zou"
-date: "May 1, 2016"
+date: "May 4th, 2016"
 output: html_document
 ---
 
@@ -23,26 +23,27 @@ Therefore, the initial building of the 30 cards, as well as the choices of cards
 
 
 ## Initial Questions: 
->__1. What are the "true" values of individual cards? Are there any properties the Blizard company used to assign values (cost) of these cards? Is there any card undervalued/overvalued by the company?___
+>__1. What are the "true" values of individual cards? Are there any properties the Blizard company used to assign values (cost) of these cards? Is there any card undervalued/overvalued by the company?__
 
 * This was considered as the __first stage__ of our analysis. In this stage, we aimed to estimate the value of each card independently, only considering the basic information from the card itself, i.e. attack, health, special ability.
 
->__2. What is the balance between low cost cards and high cost cards?___
+>__2. What is the balance between low cost cards and high cost cards?__
 
 * This is the __second stage__ of our analysis. The card a player can use is restricted by the number of mana he/she has for that turn, starting from 1 at the beginning and will reach to a maximum of 10 since the 10th turn. If there is no card with cost less than or equal to the number of mana in that turn, the player cannot use any card. 
 Note that without this consideration, we may choose all 30 cards to be with very high cost -- however, we are not able to use them in the first several turns. If the opponent do have small cards, we may be attacked to death before we could ever use any card.
 We aimed to simulate the possibilities of playing a card in the first 5 turns. 
 
->__3. Are there any "core" combination of cards?___
+>__3. Are there any "core" combination of cards?__
 
 * This is the __third stage__ of our analysis. We aimed to estimate the correlation between cards in certain decks of a specific hero and hope to create card combinations based on principal component analyses. In deciding the number of core cards, we also want to explore the number of drawing cards we need, in order to be able to get the core cards in the random drawing during the game.
 
->__4. Are we able to build a powerful deck (30 cards) for some heros?___
+>__4. Are we able to build a powerful deck (30 cards) for some heros?__
 
 * With all our analysis in previous stages, we aimed to build potentially powerful decks for certain heros.
 <img src="flowchart.png" align="center" height="800" width="500" margin="0 auto" />
 
->__5. Test the deck we built (optional)___
+>__5. Test the deck we built (optional)__
+
 * We can test our model by simulating games using the deck and strategy we developed, and calculate its percentage of winning.
 
 ## Related Work:
@@ -229,115 +230,6 @@ colnames(minions_text)
 save(minions_text, file = "minions_text.RData")
 ```
 
-## Exploratory Analysis
-```{r warning= F, error=F}
-theme_set(theme_bw(base_size = 16))
-load("minions_text.RData")
-data<-minions_text
-```
-distribution of Cost:
-First, we want to see how costs of cards distributed across the card databases. A great portion of cards are 2 to 4 cost, and this is a right skewed distribution. From the above plots, we have found similar patterns in attack and health as in the cost distribution. These similar patterns give us a hint of using linear model to predict cost by attack and health. 
-```{r warning= F, error=F}
-#remove costs that are "12" and "20" for these two cards are very special
-Cost<-data%>%dplyr::arrange(cost)
-Cost<-unique(data%>%filter(cost<=10)%>%group_by(cost)%>%dplyr::mutate(n=n())%>%ungroup()%>%select(cost,n))
-# 7 stands for higher than 7
-Cost1<-Cost%>%filter(cost<7)                       
-Cost2<-c(7,61)
-Cost<-rbind(Cost1,Cost2)
-
-Cost<-Cost%>%dplyr::mutate(pos=cumsum(n)-n/2)
-p<-Cost%>%ggplot(aes(x=1,y=n,fill=factor(cost)))
-p+geom_bar(stat="identity",width=1)+geom_text(aes(x=1.6,y=pos,label = percent(n/sum(n))))+coord_polar(theta="y")+ xlab('')+ylab('')+theme(axis.text=element_blank(),axis.ticks=element_blank(),panel.grid=element_blank())+ggtitle("Pie Chart of Card Cost")
-
-#histogram
-ggplot(data, aes(factor(cost)))+ geom_bar()+scale_fill_brewer()+ggtitle("Histogram for Cost")+xlab("Cost")
-```
-
-Conclusion: cards with cost "2","3","4" out of the 11 possible costs occupying around 104% in total are most common in the deck
-
-distribution of attack
-```{r warning= F, error=F}
-
-Attackk<-data%>%arrange(attack)
-Attack<-unique(Attackk%>%group_by(attack)%>%dplyr::mutate(n=n())%>%ungroup()%>%select(attack,n))
-#histogram
-ggplot(data, aes(factor(attack)))+ geom_bar()+scale_fill_brewer()+ggtitle("Histogram for Attack")+xlab("Attack")
-```
-
-distribution of health
-```{r warning= F, error=F}
-Health<-data%>%arrange(health)
-Health<-unique(Health%>%group_by(health)%>%mutate(n=n())%>%ungroup()%>%select(health,n))
-#histogram
-ggplot(data, aes(factor(health)))+ geom_bar()+scale_fill_brewer()+ggtitle("Histogram for health")+xlab("Health")+ theme(axis.text.x = element_text(angle = 0, hjust = 1))
-
-```
-
-distribution of mechanics:
-In the whole card dataset, there are some confounders such as mechanism, rarity and card set, that might affect our assumption of linear relationship between cost, attack and health. Take mechanism as an example, we ploted the cost, attack and health distributions of under different mechanisms. We found the pattern of these three dimensions are similar across all these mechanisms. For all these three confounders, we found all the distributions have similar patterns.
-```{r warning= F, error=F}
-Mechanics<-data%>%arrange(mechanics)
-Mechanics<-unique(Mechanics%>%group_by(mechanics)%>%dplyr::mutate(n=n())%>%ungroup()%>%select(mechanics,n))
-#histogram
-ggplot(data, aes(factor(mechanics)))+ geom_bar()+scale_fill_brewer()+ggtitle("Histogram for Mechanics")+xlab("Mechanics")+ theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-```
-
-*distribution of each mechanics
-```{r}
-qplot(factor(data$mechanics),data$cost,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for cost in mechanics")+ylab("cost")+xlab("Mechanics")
-
-qplot(factor(data$mechanics),data$health,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for health in mechanics")+ylab("health")+xlab("Mechanics")
-
-qplot(factor(data$mechanics),data$attack,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for Attack in mechanics")+ylab("attack")+xlab("Mechanics")
-```
-
-
-distribution of cardSet
-```{r warning= F, error=F}
-cs<-data%>%arrange(cardSet)
-cs<-unique(cs%>%group_by(cardSet)%>%dplyr::mutate(n=n())%>%ungroup()%>%select(cardSet,n))
-#pie chart
-cs<-cs%>%dplyr::mutate(pos=cumsum(n)-n/2)
-p<-cs%>%ggplot(aes(x=1,y=n,fill=factor(cardSet)))
-p+geom_bar(stat="identity",width=1)+geom_text(aes(x=1.6,y=pos,label = percent(n/sum(n))))+coord_polar(theta="y")+ xlab('')+ylab('')+theme(axis.text=element_blank(),axis.ticks=element_blank(),panel.grid=element_blank())+ggtitle("Pie Chart of CardSet")
-#histogram
-qplot(data$cardSet,xlab="CardSet",main="Histogram for CardSet distribution")+theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-```
-
-*distribution of each CardSet
-```{r}
-qplot(factor(data$cardSet),data$cost,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for cost in CardSet")+ylab("cost")+xlab("CardSet")
-
-qplot(factor(data$cardSet),data$health,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for health in CardSet")+ylab("health")+xlab("CardSet")
-
-qplot(factor(data$cardSet),data$attack,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for Attack in CardSet")+ylab("attack")+xlab("CardSet")
-
-```
-
-distribution of rarity
-```{r warning= F, error=F}
-rr<-unique(data%>%group_by(rarity)%>%dplyr::mutate(n=n())%>%ungroup()%>%select(rarity,n))
-#pie chart
-rr<-rr%>%mutate(pos=cumsum(n)-n/2)
-p<-rr%>%ggplot(aes(x=1,y=n,fill=factor(rarity)))
-p+geom_bar(stat="identity",width=1)+geom_text(aes(x=1.6,y=pos,label = percent(n/sum(n))))+coord_polar(theta="y")+ xlab('')+ylab('')+theme(axis.text=element_blank(),axis.ticks=element_blank(),panel.grid=element_blank())+ggtitle("Pie Chart of rarity")
-#histogram
-qplot(data$rarity,xlab="Rarity",main="Histogram for rarity")+theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-*distribution for each rarity
-```{r}
-qplot(factor(data$rarity),data$cost,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for cost in Rarity")+xlab("Rarity")+ylab("cost")
-
-qplot(factor(data$rarity),data$health,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for health in Rarity")+xlab("Rarity")+ylab("health")
-
-qplot(factor(data$rarity),data$attack,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for Attack in Rarity")+xlab("Rarity")+ylab("attack")
-
-```
-
 ### Frequently used decks from top players
 Instead of looking at the card information alone, we are trying to consider how one card interacts with others. We are using the built-up decks from top players of Hearthstone from the following website:
 <http://www.hearthstonetopdecks.com/>
@@ -417,6 +309,121 @@ for(i in 1:9){
   decks[[i]]<-heroDeckLists[[i]]%>%gather(deckId,cardCounts,2:(length(heroDeckLists[[i]])-1))
 }
 ```
+
+## Exploratory Analysis
+```{r warning= F, error=F}
+theme_set(theme_bw(base_size = 16))
+load("minions_text.RData")
+data<-minions_text
+```
+
+#### Distribution of Cost:
+
+First, we want to see how costs of cards distributed across the card databases. A great portion of cards are 2 to 4 cost, and this is a right skewed distribution. From the above plots, we have found similar patterns in attack and health as in the cost distribution. These similar patterns give us a hint of using linear model to predict cost by attack and health. 
+```{r warning= F, error=F}
+#remove costs that are "12" and "20" for these two cards are very special
+Cost<-data%>%dplyr::arrange(cost)
+Cost<-unique(data%>%filter(cost<=10)%>%group_by(cost)%>%dplyr::mutate(n=n())%>%ungroup()%>%select(cost,n))
+# 7 stands for higher than 7
+Cost1<-Cost%>%filter(cost<7)                       
+Cost2<-c(7,61)
+Cost<-rbind(Cost1,Cost2)
+
+Cost<-Cost%>%dplyr::mutate(pos=cumsum(n)-n/2)
+p<-Cost%>%ggplot(aes(x=1,y=n,fill=factor(cost)))
+p+geom_bar(stat="identity",width=1)+geom_text(aes(x=1.6,y=pos,label = percent(n/sum(n))))+coord_polar(theta="y")+ xlab('')+ylab('')+theme(axis.text=element_blank(),axis.ticks=element_blank(),panel.grid=element_blank())+ggtitle("Pie Chart of Card Cost")
+
+#histogram
+ggplot(data, aes(factor(cost)))+ geom_bar()+scale_fill_brewer()+ggtitle("Histogram for Cost")+xlab("Cost")
+```
+
+Conclusion: cards with cost "2","3","4" out of the 11 possible costs occupying around 104% in total are most common in the deck
+
+#### Distribution of attack
+```{r warning= F, error=F}
+
+Attackk<-data%>%arrange(attack)
+Attack<-unique(Attackk%>%group_by(attack)%>%dplyr::mutate(n=n())%>%ungroup()%>%select(attack,n))
+#histogram
+ggplot(data, aes(factor(attack)))+ geom_bar()+scale_fill_brewer()+ggtitle("Histogram for Attack")+xlab("Attack")
+```
+
+#### Distribution of health
+```{r warning= F, error=F}
+Health<-data%>%arrange(health)
+Health<-unique(Health%>%group_by(health)%>%mutate(n=n())%>%ungroup()%>%select(health,n))
+#histogram
+ggplot(data, aes(factor(health)))+ geom_bar()+scale_fill_brewer()+ggtitle("Histogram for health")+xlab("Health")+ theme(axis.text.x = element_text(angle = 0, hjust = 1))
+
+```
+
+#### Distribution of mechanics:
+
+In the whole card dataset, there are some confounders such as mechanism, rarity and card set, that might affect our assumption of linear relationship between cost, attack and health. Take mechanism as an example, we ploted the cost, attack and health distributions of under different mechanisms. We found the pattern of these three dimensions are similar across all these mechanisms. For all these three confounders, we found all the distributions have similar patterns.
+
+```{r warning= F, error=F}
+Mechanics<-data%>%arrange(mechanics)
+Mechanics<-unique(Mechanics%>%group_by(mechanics)%>%dplyr::mutate(n=n())%>%ungroup()%>%select(mechanics,n))
+#histogram
+ggplot(data, aes(factor(mechanics)))+ geom_bar()+scale_fill_brewer()+ggtitle("Histogram for Mechanics")+xlab("Mechanics")+ theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+##### Distribution of each mechanics
+```{r}
+qplot(factor(data$mechanics),data$cost,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for cost in mechanics")+ylab("cost")+xlab("Mechanics")
+
+qplot(factor(data$mechanics),data$health,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for health in mechanics")+ylab("health")+xlab("Mechanics")
+
+qplot(factor(data$mechanics),data$attack,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for Attack in mechanics")+ylab("attack")+xlab("Mechanics")
+```
+
+
+#### Distribution of cardSet
+```{r warning= F, error=F}
+cs<-data%>%arrange(cardSet)
+cs<-unique(cs%>%group_by(cardSet)%>%dplyr::mutate(n=n())%>%ungroup()%>%select(cardSet,n))
+#pie chart
+cs<-cs%>%dplyr::mutate(pos=cumsum(n)-n/2)
+p<-cs%>%ggplot(aes(x=1,y=n,fill=factor(cardSet)))
+p+geom_bar(stat="identity",width=1)+geom_text(aes(x=1.6,y=pos,label = percent(n/sum(n))))+coord_polar(theta="y")+ xlab('')+ylab('')+theme(axis.text=element_blank(),axis.ticks=element_blank(),panel.grid=element_blank())+ggtitle("Pie Chart of CardSet")
+#histogram
+qplot(data$cardSet,xlab="CardSet",main="Histogram for CardSet distribution")+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+##### Distribution of each CardSet
+```{r}
+qplot(factor(data$cardSet),data$cost,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for cost in CardSet")+ylab("cost")+xlab("CardSet")
+
+qplot(factor(data$cardSet),data$health,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for health in CardSet")+ylab("health")+xlab("CardSet")
+
+qplot(factor(data$cardSet),data$attack,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for Attack in CardSet")+ylab("attack")+xlab("CardSet")
+
+```
+
+#### Distribution of rarity
+```{r warning= F, error=F}
+rr<-unique(data%>%group_by(rarity)%>%dplyr::mutate(n=n())%>%ungroup()%>%select(rarity,n))
+#pie chart
+rr<-rr%>%mutate(pos=cumsum(n)-n/2)
+p<-rr%>%ggplot(aes(x=1,y=n,fill=factor(rarity)))
+p+geom_bar(stat="identity",width=1)+geom_text(aes(x=1.6,y=pos,label = percent(n/sum(n))))+coord_polar(theta="y")+ xlab('')+ylab('')+theme(axis.text=element_blank(),axis.ticks=element_blank(),panel.grid=element_blank())+ggtitle("Pie Chart of rarity")
+#histogram
+qplot(data$rarity,xlab="Rarity",main="Histogram for rarity")+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+##### Distribution for each rarity
+```{r}
+qplot(factor(data$rarity),data$cost,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for cost in Rarity")+xlab("Rarity")+ylab("cost")
+
+qplot(factor(data$rarity),data$health,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for health in Rarity")+xlab("Rarity")+ylab("health")
+
+qplot(factor(data$rarity),data$attack,geom="boxplot")+scale_fill_brewer()+theme(axis.text.x = element_text(angle = 45, hjust = 1,size=10))+ggtitle("Boxplots for Attack in Rarity")+xlab("Rarity")+ylab("attack")
+
+```
+
+
 
 ## Final Analysis:
 
@@ -626,6 +633,7 @@ rmse_results = bind_rows(rmse_results,data_frame(method="X: attack, health",
                                      RMSE = model3))
 rmse_results
 ```
+
 This model seems to be even better since it allows the effect of health and attack to be different on the value of cost. We therefore chose to go with this model and try to adjust for additional effect imerged from card features. Since Hearthstone cards have descriptions on them and they are sometimes not quantifiable, we distinguished features that are easily quantifiable into categories. We ended up categorizing cards into __Charge__ (cards can attack immediately once they were put on the stage), __Divine Shield__ (cards have a protective shield that can protect them from reducing health during their first attack), __Overload__ (specific cards for Shamman that can cause dramatic decrease in health at very early stage, but playing overload cards we limit the amount of mana players can use in the next round), __Taunt__ (cards that can protect the hero, the opponent must attack taunts first before attacking the hero), __Stealth__ (cards that are invisible and can not be attacked until their first attack), and __Windfury__ (cards that can attack twice each turn). Cards that cannot be classified into these categories was then treated as normal cards and set to be reference group in the model.
 
 ```{r}
@@ -746,9 +754,17 @@ From the above plot, we can see that after adjusting for the claimed features (h
 
 ### Simulation
 >__2. What is the balance of choice between low cost cards and high cost cards? __
-Accoring to our previous model and our exprience with HearthStone, the higher the cost of a card, the more powerful it is. However, the higher the cost of a card, the less likely we can play in the first few rounds (due to limited mana in hand). Therefore, we intended to reach a balance on choosing low/high cost cards. To simulate this, we made the following assumptions:
+
+According to our previous model and our exprience with HearthStone, the higher the cost of a card, the more powerful it is. However, the higher the cost of a card, the less likely we can play in the first few rounds (due to limited mana in hand). Especially when we decide to play fast tempo, we want to be able to attack the opponent before he collects his good cards or core cards.
+
+Therefore, we intended to reach a balance on choosing low/high cost cards. 
+
+To simulate this, we made the following assumptions:
+
 Assumption 1: Players will not play zero cost cards in the first few rounds. 
+
 Assumption 2: Cost can roughly represent the value of the card, thus we can maximize the cost of all 30 cards to maximize their values. 
+
 Assumption 3: We focus on the first 5 turns, since the card costs are mostly less than 6 (76.3% of cards).  
 
 First, create decks with all reasonable combinations of small cards (cost 1-5) and others.
@@ -802,6 +818,7 @@ write.csv(decks,file="/Users/Yinnan/Desktop/2016/HearthScience/simulation.csv")
 
 ```
 
+Finally, we decide the minimum number of low cost cards, depending on each play tempo. We decide this by making different thresholds of the probability of using cards by the second/third/fourth turn.
 
 ```{r}
 # get the simulation result from github
@@ -975,10 +992,14 @@ warriorDeckCost%>%select(deckId,aveCost)%>%distinct()%>%
 
 
 ```
-From the histogram we can see warlock is quite different from other heros, the distribution of the costs of decks has double peaks, while others are more likely following a normal distribution. This finding gives us a suggestion to explore data furtherly.
+
+From the histogram we can see warlock is quite different from other heros, the distribution of the costs of decks has double peaks, while others are more likely following a normal distribution. This finding suggests that the warlock card may be ideal to look at as it is likely to have both slow-tempo and fast-tempo mode to play, and may have distinctive features and combinations for certain cards.
+
 
 #### Explore Card Interactions within Warlock Decks
+
 We have looked at the correlation between the cards within warlock decks. We calculated the correlations between each cards. 
+
 ```{r,warning=F,error=F}
 data<-read.csv("correlation.csv")
 colnames(data)<-gsub("\\."," ",colnames(data))
@@ -1153,7 +1174,7 @@ total.df%>%dplyr::select(ID,cardTotalCounts,Cluster)%>%filter(complete.cases(.))
 
 ```
 
-From the above plots, we can see that the cards in cluster 1 and 3 are more frequent appear in decks. This helps us to select the core cards of a deck. A core card should neither appear too much, which makes it look like panacea; nor appear too little, which means it has fewer interaction with other cards.
+From the above plots, we can see that the cards in cluster 1 and 3 appear more frequently in decks. This helps us to select the core cards of a deck. A core card should neither appear too much, which makes it look like panacea; nor appear too little, which means it has fewer interaction with other cards.
 
 ```{r,warning=F,error=F}
 coreTable<-total.df%>%filter(type=="Minion")%>%dplyr::select(ID,cardTotalCounts,Cluster,cost)%>%filter(complete.cases(.))%>%
@@ -1163,13 +1184,14 @@ coreTable%>%group_by(Cluster)%>%summarize(n())
 
 ```
 
-Now, in each cluster, we have several numbers of core cards. But 6 and 7 core cards are a bit too many. So let's do a simulation of how numbers of core cards affect the probability of getting all the core cards after drawing certain amount of cards.
+Now, in each cluster, we have several numbers of core cards. 6 and 7 core cards may be too much and we are worried that we may not be able to get all the core cards and to use them. So we decide to do a simulation to figure out how the numbers of core cards will affect the probability of getting all the core cards after each turn.
 
 
-#### Number of Draw cards
-For each deck, there are several "core" cards that can have the greatest effect when they are used together. We will usually put 2 cards for each component of core cards, and we want to get at least one for every component as early as possible.
+#### Number of Core cards
 
-First we list all possible decks with core cards and normal cards. Each set of core cards includes 2-5 different components. We consider the offensive side/early hand first.
+For each deck, there are several "core" cards that can have the greatest effect when they are used together. We will usually put 2 cards for each component of core cards,  Once we get at least one of every component in a set of core cards, we are very likely to win -- but we need to survive to that time. Thus we hope to get at least one for every component as early as possible.
+
+First we list all possible decks with core cards and all other cards (normal cards). Each set of core cards includes 2-5 different components. We consider the offensive side/early hand first.
 
 ```{r}
 # sort the first 6 card for offensive side/early hand, assume we will always keep the core card
@@ -1368,6 +1390,7 @@ defen_core7 <- function(i){
 d7 <- sapply(1:26,defen_core7) 
 ```
 
+The probability of getting the whole set of core cards increases by the number of cards you draw, and also differs from the number of core card in a set and from the early or late hand.
 
 ```{r}
 # show results: the probability of getting the whole set of core cards
@@ -1384,17 +1407,24 @@ offensive %>% ggplot(aes(card,prob)) + geom_line(aes(color=n_core)) +
         ggtitle("Early hand") +
         scale_x_continuous(breaks=4:30) +
         scale_y_continuous(breaks=seq(0,1,0.1)) +
-        geom_vline(xintercept = 13)
+        geom_vline(xintercept = 13) + geom_vline(xintercept = 18) +
+        geom_hline(yintercept = 0.5)
 defensive %>% ggplot(aes(card,prob)) + geom_line(aes(color=n_core)) +
         ggtitle("Late hand") +
         scale_x_continuous(breaks=5:30) +
         scale_y_continuous(breaks=seq(0,1,0.1)) +
-        geom_vline(xintercept = 14)
+        geom_vline(xintercept = 14) +geom_vline(xintercept = 19) +
+        geom_hline(yintercept = 0.5)
 
 ```
 
 After we selected the candidates of core cards, now we are trying to construct a deck from what we have. 
-According to our simulations above, we set a vertical line at Turn 10. At that point the curves of probablity of collecting all k (k=2,3,4...) core cards are seperate. Considering Warlock's hero ability (draw one card by 2 self-damages), at Turn 10, the total cards the player might draw are from 13 to 18. We assume that the core cards are determinant to winning a game, which means that if the player collect all these cards, he will win. So if we set the cutoffs as 0.5, which means half of the games can collect all these core cards. We can see that 5 is the maxium number of core cards that satisifies our criteria. To reduce number of core cards, we used the evaluation of step 1. Here, we used the cards that are underestimated most as our core cards from the candidates. Then we calculated the distance of other cards to the center of these cards and pick the nearest cards to construct our deck.
+
+According to our simulations above, we set a vertical line at Turn 10. At that point the curves of probablity of collecting all k (k=2,3,4...) core cards are seperate. Considering Warlock's hero ability (draw one card by 2 self-damages), at Turn 10, the total cards the player might draw are from 13 to 18 for early hand and 14 to 19 for late hand. We assume that the core cards are determinant to winning a game, which means that if the player collect all these cards, he will win. We set the cutoffs as 0.5, which means half of the games can collect all these core cards. We can see that 5 is the maxium number of core cards that satisifies our criteria. 
+
+To reduce number of core cards, we used the evaluation of step 1. Here, we used the cards that are underestimated most as our core cards from the candidates. Then we calculated the distance of other cards to the center of these cards and pick the nearest cards to construct our deck.
+
+
 ```{r,warning=F,error=F,eval=F}
 coreTable<-coreTable%>%left_join(final,by=c("ID"="name"))
 coreTable<-coreTable%>%select(-cardId)
@@ -1435,6 +1465,7 @@ zooDeck<-read.csv("zooDeck.csv",header = TRUE,sep=",")
 zooDeck[,2:3]%>%kable
 ```
 
+
 In this deck we built, we have 8 cards with cost 1, 6 cards with cost 2, 3 cards with cost 3, 2 cards with cost 4. It satisfy our simulation of fast-tempo play mode in which we need at least 7 cards with cost no more than 2, at least 9 cards with cost no more than 4. Thus we are supposed to be able to play the cards randomly drawn from the deck with high probabilities (at least 90% probability in the first 2 turns, 95% probability in the first 3 turns, and 99% probability in the first 4 turns). 
 
 ## Validation
@@ -1455,18 +1486,23 @@ new_assigned_cards = c("Knife Juggler", "Gig Game Hunter", "Force of Nature",
 
 final %>% filter(name %in% new_assigned_cards)
 ```
-Our model predicted 3 out of these 7 cards correctly, in which they are underestimate (they are more powerful than the values they were assigned). After Blizard's adjustment, these cards become weakened. However, we also made wrong prediction on three cards: Ironbeak Owl, Keeper of Grove and Ancient of Lore. The first two cards have special ability with silence effect, which is not adjusted into our model since there are only three cards with this ability. The Ancient of Lore is also misvalued by our model, this is because it has the ability of Choice, and Choice is also a uncommon ability so it has too few cards for our model to predict. Also, in our model, we consider all the cards with more than 7 costs as 7 cost (be consistent with the categories in HearthStone game). So for Molten Giant, it has a special mechanism of changing costs according to the hero's health, which makes it have a changeable cost. This is not suitable for our model (we can only estimate minions with a fixed cost).
 
+Our model predicted 3 out of these 7 cards correctly, in which they are underestimate (they are more powerful than the values they were assigned). After Blizard's adjustment, these cards become weakened. 
+However, we also made wrong prediction on three cards: Ironbeak Owl, Keeper of Grove and Ancient of Lore. The first two cards have special ability with silence effect, which is not adjusted into our model since there are only three cards with this ability. The Ancient of Lore is also misvalued by our model, this is because it has the ability of Choice, and Choice is also a uncommon ability so it has too few cards for our model to predict. Also, in our model, we consider all the cards with more than 7 costs as 7 cost (be consistent with the categories in HearthStone game). So for Molten Giant, it has a special mechanism of changing costs according to the hero's health, which makes it have a changeable cost. This is not suitable for our model (we can only estimate minions with a fixed cost).
 
 
 ### Real-time evaluation of zooDeck:
+
 After we built this deck, we tried to fight against AI first. The results are showed below.
 Generally speaking, our established deck performed pretty well in __players vs. computer__ games. 
+
 ```{r,warning=F,error=F}
 read.csv("practice.csv",sep="\t",header=T)
 
 ```
-After we played agint AI, we want to see the deck's performance in real games (Player vs. Player). We asked three different players to play with this deck for 5 games and record the results. The final results are showed below. The average winning rate is 53.3%. 
+
+After we played agint AI, we want to see the deck's performance in real games (Player vs. Player). We asked three different players to play with this deck for 5 games and record the results. The final results are showed below. The average winning rate is 53.3%. As we are only constructing the deck but not considering the strategy of using the cards during the game, we do not expect to get a very high wining rate. However, a wining rate around 50% means that our model based on mostly data science can potentially pick a average level deck for you, which can be particularly useful for new players without prior knowledge and personal preference.
+
 ```{r}
 read.csv("match.csv",sep="\t",header=T)
 ```
