@@ -48,6 +48,7 @@ We aimed to simulate the possibilities of playing a card in the first 5 turns.
 
 ## Related Work:
 Since HearthStone is a very popular game, there are some similar work inspiring us.
+
 1. How to appraise Hearthstone card values: https://www.elie.net/blog/hearthstone/how-to-appraise-hearthstone-card-values
 
 2. HearthSim: https://hearthsim.info
@@ -55,6 +56,7 @@ However, what they did is just use very few card and use regular linear model.To
 
 The following links are the data source we use.
 Data Source
+
 1. http://www.hearthstonetopdecks.com
 
 2. http://hearthstoneapi.com
@@ -337,7 +339,7 @@ p+geom_bar(stat="identity",width=1)+geom_text(aes(x=1.6,y=pos,label = percent(n/
 ggplot(data, aes(factor(cost)))+ geom_bar()+scale_fill_brewer()+ggtitle("Histogram for Cost")+xlab("Cost")
 ```
 
-Conclusion: cards with cost "2","3","4" out of the 11 possible costs occupying around 104% in total are most common in the deck
+Conclusion: cards with cost "2","3","4" out of the 11 possible costs occupying around 40.6% in total are most common in the deck
 
 #### Distribution of attack
 ```{r warning= F, error=F}
@@ -433,9 +435,11 @@ qplot(factor(data$rarity),data$attack,geom="boxplot")+scale_fill_brewer()+theme(
 ```{r, fig.width= 8}
 load("minions_text.RData")
 ## cost vs attack+health:
-minions_text %>% ggplot(aes(cost)) + stat_bin(aes(y = ..count..), bins = 50 , position='dodge')
+g1 = minions_text %>% ggplot(aes(cost)) + stat_bin(aes(y = ..count..), bins = 50 , position='dodge')
 
-minions_text %>% mutate(attplusheal = attack+health) %>% ggplot(aes(attplusheal)) + stat_bin(aes(y = ..count..), bins = 50 , position='dodge')
+g2 = minions_text %>% mutate(attplusheal = attack+health) %>% ggplot(aes(attplusheal)) + stat_bin(aes(y = ..count..), bins = 50 , position='dodge')
+
+grid.arrange(g1, g2, ncol=2)
 ```
 
 From the above plots, we can found similar distributions between the cost and the sum of attach and health, where the distributions are right-skewed. Also, there seems to be some outliers that are very different from other cards.
@@ -461,6 +465,8 @@ minions_text %>% mutate(attplusheal = attack+health) %>%
   group_by(attplusheal) %>%
   summarize(cost = mean(cost)) %>%
   ggplot(aes(attplusheal, cost)) + geom_point()
+
+
 ```
 
 We can see from the above graph that higher attplusheal value (attack+health) is associated with higher mean cost. 
@@ -474,15 +480,16 @@ minions_text = minions_text %>%
 minions_text %>% ggplot(aes(cost1)) + geom_histogram()
 
 minions_text %>% mutate(attplusheal = attack+health) %>% 
-  group_by(cost1, attplusheal) %>% summarize(count = n()) %>%
-  ggplot(aes(attplusheal, cost1, col = factor(floor(count/10)*10))) + geom_point()
+  group_by(attplusheal) %>% 
+  summarize(cost = mean(cost1)) %>%
+  ggplot(aes(attplusheal, cost)) + geom_point()
 
 ## by cardSet:
 minions_text %>% ggplot(aes(cost1, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 20 , position='dodge')
 ```
 
 
-```{r, warning=F, error=F}
+```{r, warning=F, error=F, fig.height=8}
 ## by attack, cost, health:
 minions_bars = minions_text %>% gather(key, value, cost, attack, health)
 minions_bars %>% ggplot(aes(value, group = key, fill = key)) + stat_bin(aes(y = ..count..), bins = 40, position='dodge')
@@ -490,15 +497,15 @@ minions_bars %>% ggplot(aes(value, group = key, fill = key)) + stat_bin(aes(y = 
 
 ## by cardSet:
 ## Cost:
-minions_text %>% ggplot(aes(cost, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 40 , position='dodge')
+g1 = minions_text %>% ggplot(aes(cost, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 40 , position='dodge')
 
 ## Attack:
-minions_text %>% ggplot(aes(attack, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 40 , position='dodge')
+g2 = minions_text %>% ggplot(aes(attack, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 40 , position='dodge')
 
 ## Health:
-minions_text %>% ggplot(aes(health, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 40 , position='dodge')
+g3 = minions_text %>% ggplot(aes(health, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 40 , position='dodge')
 
-
+grid.arrange(g1, g2, g3, nrow = 3)
 ```
 
 Since the outcome variable (Y) in our analysis is the __costs__ of cards, which are normally integer from 0 to 7+ (all values greater than 7 are considered in the group of 7+), we adopted a model that consider ordinal polytomous outcome -- cumulative logits model. Since the features' effects (attack, cost, special abilities, etc.) should be the similar in cards with different costs, we also assumed proportional odds of these features across different cost groups. And we ended up with 7 outcome groups (cost value: 1 to 7+), we excluded cards that cost 0 mana since 1) they are usually cards that do not cost players to play and 2) the nature of these 0 cost cards are quite different from normal minion cards. In general, the cumulative logits model is in format shown below, where X is the covariate matrix, and $\beta$ is the coefficient matrix:
@@ -1000,7 +1007,7 @@ From the histogram we can see warlock is quite different from other heros, the d
 
 We have looked at the correlation between the cards within warlock decks. We calculated the correlations between each cards. 
 
-```{r,warning=F,error=F}
+```{r,warning=F,error=F, fig.width= 10}
 data<-read.csv("correlation.csv")
 colnames(data)<-gsub("\\."," ",colnames(data))
 #warlockDecks<-heroDeckLists[[8]]
@@ -1133,7 +1140,7 @@ p2<-ggplot(data = melted_cormat2, aes(X2, X1, fill = value))+
   theme_minimal()
 
 p2+ theme(axis.text.y = element_text(vjust = 1, 
-                                     size = 4, hjust = 1))+theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                     size = 6, hjust = 1))+theme(axis.text.x = element_text(angle = 45, vjust = 1, 
                                                                                              size = 10, hjust = 1))+scale_x_discrete(expand = c(0, 0)) + scale_y_discrete(expand = c(0, 0))+theme(legend.background=element_rect(),legend.margin=unit(1,"cm"))
 
 
@@ -1508,6 +1515,6 @@ read.csv("match.csv",sep="\t",header=T)
 ```
 
 ####Special Thanks:
-Thanks to Ji's friends Chengqi and Chenchao for doing the test for us!
+Thanks to Ji's friends Chengqi and Chenchao for their help in testing our deck in real games!
 
 
