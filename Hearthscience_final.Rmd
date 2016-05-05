@@ -461,10 +461,10 @@ highcost_card = minions_text %>%
 minions_text = minions_text %>% mutate(attplusheal = attack+health) %>% filter(cost <= 10)
 
 ## cost vs attack+health:
-minions_text %>% mutate(attplusheal = attack+health) %>% 
+g1 = minions_text %>% mutate(attplusheal = attack+health) %>% 
   group_by(attplusheal) %>%
   summarize(cost = mean(cost)) %>%
-  ggplot(aes(attplusheal, cost)) + geom_point()
+  ggplot(aes(attplusheal, cost)) + geom_point() + ylab("mean cost")
 
 
 ```
@@ -477,12 +477,13 @@ In Hearthstone, the cost of cards is usually categorized into 0 ~ 6 and 7+. Here
 ## All:
 minions_text = minions_text %>% 
   mutate(cost1 = ifelse(cost >= 7, 7, cost))
-minions_text %>% ggplot(aes(cost1)) + geom_histogram()
 
-minions_text %>% mutate(attplusheal = attack+health) %>% 
+g2 = minions_text %>% mutate(attplusheal = attack+health) %>% 
   group_by(attplusheal) %>% 
   summarize(cost = mean(cost1)) %>%
-  ggplot(aes(attplusheal, cost)) + geom_point()
+  ggplot(aes(attplusheal, cost)) + geom_point() + ylab("mean cost1")
+
+grid.arrange(g1,g2, ncol = 2)
 
 ## by cardSet:
 minions_text %>% ggplot(aes(cost1, group = cardSet, fill = cardSet)) + stat_bin(aes(y = ..count..), bins = 20 , position='dodge')
