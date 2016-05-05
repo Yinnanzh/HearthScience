@@ -1129,8 +1129,8 @@ p1<-ggplot(data = melted_cormat1, aes(X2, X1, fill = value))+
   theme_minimal()
 
 p1+ theme(axis.text.y = element_text(vjust = 1, 
-                                     size = 4, hjust = 1))+theme(axis.text.x = element_text(angle = 45, vjust = 1, 
-                                                                                             size = 3, hjust = 1))+scale_x_discrete(expand = c(0, 0)) + scale_y_discrete(expand = c(0, 0))+theme(legend.background=element_rect(),legend.margin=unit(1,"cm"))
+                                     size = 8, hjust = 1))+theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                                                                             size = 8, hjust = 1))+scale_x_discrete(expand = c(0, 0)) + scale_y_discrete(expand = c(0, 0))+theme(legend.background=element_rect(),legend.margin=unit(1,"cm"))
 
 melted_cormat2 <- melt(cormat2)
 p2<-ggplot(data = melted_cormat2, aes(X2, X1, fill = value))+
